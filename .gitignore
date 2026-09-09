@@ -1,0 +1,53 @@
+# .NET
+**/bin/
+**/obj/
+**/.vs/
+*.user
+*.suo
+.idea/
+*.DotSettings.user
+
+# ASP.NET
+**/wwwroot/lib/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Node / Web
+**/node_modules/
+**/dist/
+**/.vite/
+**/.cache/
+web/.env
+web/.env.local
+web/.env.*.local
+
+# MAUI / Xamarin
+**/android/
+**/ios/
+**/.gradle/
+**/platforms/
+
+# Docker
+.dockerignore
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Terraform state (never commit real state)
+infra/terraform/**/*.tfstate
+infra/terraform/**/*.tfstate.backup
+infra/terraform/**/.terraform/
+infra/terraform/**/.terraform.lock.hcl
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

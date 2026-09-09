@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CombinedStudies.Mobile.ViewModels"
+             x:Class="CombinedStudies.Mobile.Views.RegisterPage"
+             Title=""
+             BackgroundColor="{AppThemeBinding Light=#F9FAFB, Dark=#030712}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0" Padding="24,60,24,24" MaximumWidthRequest="480"
+                             HorizontalOptions="Center" VerticalOptions="Center">
+
+            <Label Text="Combined Studies"
+                   FontSize="22" FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   TextColor="{AppThemeBinding Light=#111827, Dark=#F9FAFB}"
+                   Margin="0,0,0,4"/>
+            <Label Text="Create your account"
+                   FontSize="14" HorizontalOptions="Center"
+                   TextColor="{AppThemeBinding Light=#6B7280, Dark=#9CA3AF}"
+                   Margin="0,0,0,32"/>
+
+            <Border StrokeShape="RoundRectangle 12"
+                    Stroke="{AppThemeBinding Light=#F3F4F6, Dark=#1F2937}"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#111827}"
+                    Padding="24">
+                <VerticalStackLayout Spacing="20">
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Display name" FontSize="13" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#374151, Dark=#D1D5DB}"/>
+                        <Entry Text="{Binding DisplayName}" Placeholder="Your name"
+                               PlaceholderColor="#9CA3AF" BackgroundColor="Transparent"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Email" FontSize="13" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#374151, Dark=#D1D5DB}"/>
+                        <Entry Text="{Binding Email}" Keyboard="Email"
+                               Placeholder="you@example.com" PlaceholderColor="#9CA3AF"
+                               BackgroundColor="Transparent"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Password" FontSize="13" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#374151, Dark=#D1D5DB}"/>
+                        <Entry Text="{Binding Password}" IsPassword="True"
+                               Placeholder="min 8 characters" PlaceholderColor="#9CA3AF"
+                               BackgroundColor="Transparent"/>
+                    </VerticalStackLayout>
+
+                    <Label Text="{Binding ErrorMessage}" FontSize="13"
+                           TextColor="#EF4444" IsVisible="{Binding ErrorMessage, Converter={x:StaticResource StringToBoolConverter}}"/>
+
+                    <Button Text="{Binding IsBusy, Converter={x:StaticResource BusyTextConverter}, ConverterParameter='Creating account…|Create account'}"
+                            Command="{Binding RegisterCommand}"
+                            IsEnabled="{Binding IsBusy, Converter={x:StaticResource InverseBoolConverter}}"
+                            BackgroundColor="#0D9488" TextColor="White"
+                            CornerRadius="8" FontSize="14" HeightRequest="44"/>
+
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="4">
+                        <Label Text="Already have an account?" FontSize="13"
+                               TextColor="{AppThemeBinding Light=#6B7280, Dark=#9CA3AF}"/>
+                        <Label Text="Sign in" FontSize="13" FontAttributes="Bold" TextColor="#0D9488">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding GoToLoginCommand}"/>
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </HorizontalStackLayout>
+
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

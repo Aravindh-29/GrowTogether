@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.*" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.18" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.*">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CombinedStudies.Shared\CombinedStudies.Shared.csproj" />
+    <ProjectReference Include="..\Modules\Identity\CombinedStudies.Identity.csproj" />
+    <ProjectReference Include="..\Modules\Profiles\CombinedStudies.Profiles.csproj" />
+    <ProjectReference Include="..\Modules\Matching\CombinedStudies.Matching.csproj" />
+    <ProjectReference Include="..\Modules\Connections\CombinedStudies.Connections.csproj" />
+    <ProjectReference Include="..\Modules\Chat\CombinedStudies.Chat.csproj" />
+    <ProjectReference Include="..\Modules\Classrooms\CombinedStudies.Classrooms.csproj" />
+    <ProjectReference Include="..\Modules\Ideas\CombinedStudies.Ideas.csproj" />
+    <ProjectReference Include="..\Modules\Groups\CombinedStudies.Groups.csproj" />
+    <ProjectReference Include="..\Modules\Reputation\CombinedStudies.Reputation.csproj" />
+  </ItemGroup>
+
+</Project>

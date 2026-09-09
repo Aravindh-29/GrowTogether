@@ -1,0 +1,58 @@
+/* Combined Studies – animated world-map network */
+
+/* ── Edge draw-in ─────────────────────────────────────────────────────── */
+.cs-net-line {
+  stroke-dasharray:  var(--len, 200);
+  stroke-dashoffset: var(--len, 200);
+  transition: stroke-dashoffset 0.60s ease-in-out;
+}
+.cs-net-line.cs-net-on {
+  stroke-dashoffset: 0;
+}
+
+/* ── Node bounce-in ───────────────────────────────────────────────────── */
+@keyframes csNetIn {
+  0%   { transform: scale(0);    opacity: 0; }
+  60%  { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+.cs-net-node {
+  transform-box:    fill-box;
+  transform-origin: 50% 50%;
+  opacity:   0;
+  transform: scale(0);
+}
+.cs-net-node.cs-net-vis {
+  animation: csNetIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── Arc traveling dot (CSS Motion Path) ─────────────────────────────── */
+@keyframes csArcTravel {
+  from { offset-distance: 0%; }
+  to   { offset-distance: 100%; }
+}
+
+.cs-arc-dot {
+  animation-name:            csArcTravel;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  /* offset-path and animation-duration are set via inline style */
+}
+
+/* ── Reduced-motion: skip all animation ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cs-net-line {
+    stroke-dashoffset: 0 !important;
+    transition: none !important;
+  }
+  .cs-net-node {
+    opacity:   1 !important;
+    transform: scale(1) !important;
+    animation: none !important;
+  }
+  .cs-arc-dot {
+    animation: none !important;
+    offset-distance: 50% !important;
+  }
+}
