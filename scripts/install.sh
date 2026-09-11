@@ -597,7 +597,8 @@ server {
 
 # ── HTTPS — proxy to Grow Together on :${APP_PORT} ─────────────────────────
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
+    http2 on;
     server_name ${DOMAIN_NAME};
 
     ssl_certificate     ${CERT_PATH};
