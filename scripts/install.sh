@@ -624,7 +624,7 @@ server {
     # ^~ makes this prefix location beat the regex location below (which also matches .jpg/.jpeg)
     location ^~ /storage/ {
         proxy_pass         http://127.0.0.1:${MINIO_PORT}/;
-        # Must use the MinIO endpoint as Host — sending $host causes MinIO
+        # Must use the MinIO endpoint as Host — sending \$host causes MinIO
         # to treat the domain as a bucket name (virtual-host style) → 404
         proxy_set_header   Host              "127.0.0.1:${MINIO_PORT}";
         proxy_set_header   X-Real-IP         \$remote_addr;
