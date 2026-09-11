@@ -195,9 +195,16 @@ step "3 / 9  .NET 8 SDK"
 if dotnet --version 2>/dev/null | grep -qE "^[89]\."; then
     ok ".NET already installed: $(dotnet --version)"
 else
+    # Microsoft feed only exists up to 24.04; use 24.04 feed on newer Ubuntu
+    UBUNTU_VER="$(lsb_release -rs)"
+    MS_FEED_VER="$UBUNTU_VER"
+    if awk "BEGIN{exit !($UBUNTU_VER >= 25)}" 2>/dev/null; then
+        MS_FEED_VER="24.04"
+        info "Ubuntu $UBUNTU_VER detected — using Microsoft feed for 24.04"
+    fi
     rm -f /tmp/packages-microsoft-prod.deb
     wget -qO /tmp/packages-microsoft-prod.deb \
-        "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+        "https://packages.microsoft.com/config/ubuntu/${MS_FEED_VER}/packages-microsoft-prod.deb"
     dpkg -i /tmp/packages-microsoft-prod.deb
     apt-get update -qq
     apt-get install -y -qq dotnet-sdk-8.0 2>&1 | tail -3
