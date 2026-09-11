@@ -12,6 +12,7 @@ using CombinedStudies.Identity;
 using CombinedStudies.Posts;
 using CombinedStudies.Profiles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,6 +45,17 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddHealthChecks();
+
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.EnableForHttps = true;
+    opts.Providers.Add<BrotliCompressionProvider>();
+    opts.Providers.Add<GzipCompressionProvider>();
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        ["application/json", "text/plain", "application/javascript", "text/css"]);
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.SmallestSize);
 
 builder.Services.AddCors(opts =>
     opts.AddDefaultPolicy(p => p
@@ -120,9 +132,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseResponseCompression();
 app.UseCors();
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// Cache content-hashed static assets (JS/CSS) for 1 year; index.html stays no-cache
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.File.Name;
+        if (path.EndsWith(".html"))
+            ctx.Context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        else if (path.EndsWith(".js") || path.EndsWith(".css") || path.EndsWith(".woff2"))
+            ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+    }
+});
 app.UseAuthentication();
 app.UseAuthorization();
 
