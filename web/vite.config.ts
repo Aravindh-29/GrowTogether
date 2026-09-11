@@ -6,6 +6,18 @@ export default defineConfig(({ mode }) => {
   const isLan = mode === 'lan'
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react':  ['react', 'react-dom', 'react-router-dom'],
+            'vendor-motion': ['framer-motion'],
+            'vendor-signal': ['@microsoft/signalr'],
+            'vendor-misc':   ['axios', 'zustand', '@tanstack/react-query', 'lucide-react', '@react-oauth/google'],
+          },
+        },
+      },
+    },
     server: {
       port: 5173,
       host: isLan ? '0.0.0.0' : undefined,
