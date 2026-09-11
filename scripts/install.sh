@@ -309,70 +309,66 @@ mkdir -p "$DEPLOY_DIR"
 chown "$APP_USER:$APP_USER" "$DEPLOY_DIR"
 
 # ════════════════════════════════════════════════════════════════════════════
-# STEP 6 — MinIO
+# STEP 6 — MinIO  (runs via Docker — MinIO dropped standalone binary downloads)
 # ════════════════════════════════════════════════════════════════════════════
 step "6 / 9  MinIO"
-mkdir -p /opt/minio "$MINIO_DATA"
+mkdir -p "$MINIO_DATA"
 
-# Helper: download with curl, verify it's a real binary (not an error page)
-download_binary() {
-    local url="$1" dest="$2" name="$3"
-    rm -f "$dest"
-    info "Downloading $name..."
-    curl -fsSL --retry 3 --retry-delay 5 -o "$dest" "$url" 2>&1 \
-        || { rm -f "$dest"; die "Failed to download $name from $url"; }
-    # Verify it's actually a binary (should not start with '<' HTML)
-    local first_byte
-    first_byte="$(head -c 1 "$dest" 2>/dev/null | od -An -tx1 | tr -d ' \n')"
-    if [[ "$first_byte" == "3c" ]]; then   # '<' = HTML error page
-        rm -f "$dest"
-        die "$name download returned an HTML page — check network/URL: $url"
-    fi
-    [[ -s "$dest" ]] || die "$name downloaded as empty file — check network"
-    chmod +x "$dest"
-}
-
-if [[ ! -f "$MINIO_BIN" ]] || [[ ! -s "$MINIO_BIN" ]]; then
-    download_binary \
-        "https://github.com/minio/minio/releases/latest/download/minio_linux_amd64" \
-        "$MINIO_BIN" "MinIO server"
-    ok "MinIO binary downloaded ($(du -sh "$MINIO_BIN" | cut -f1))"
+# ── Install Docker if missing ─────────────────────────────────────────────
+if ! command -v docker &>/dev/null; then
+    info "Installing Docker..."
+    curl -fsSL https://get.docker.com | sh 2>&1 | tail -5
+    systemctl enable docker  2>/dev/null || true
+    systemctl start  docker  2>/dev/null || true
+    ok "Docker installed"
 else
-    ok "MinIO binary already present"
+    ok "Docker already present: $(docker --version | head -1)"
+    systemctl enable docker  2>/dev/null || true
+    systemctl start  docker  2>/dev/null || true
 fi
 
-if [[ ! -f "$MINIO_MC" ]] || [[ ! -s "$MINIO_MC" ]]; then
-    download_binary \
-        "https://github.com/minio/mc/releases/latest/download/mc_linux_amd64" \
-        "$MINIO_MC" "MinIO mc client"
-    ok "mc downloaded"
-else
-    ok "mc already present"
-fi
-
+# ── Config file ───────────────────────────────────────────────────────────
 mkdir -p "$CONFIG_DIR"
 cat > "$CONFIG_DIR/minio.env" <<EOF
 MINIO_ROOT_USER=$MINIO_USER
 MINIO_ROOT_PASSWORD=$MINIO_PASS
 EOF
 chmod 600 "$CONFIG_DIR/minio.env"
-chown -R "$APP_USER:$APP_USER" "$MINIO_DATA" /opt/minio
+chown -R "$APP_USER:$APP_USER" "$MINIO_DATA"
+
+# ── Pull image ────────────────────────────────────────────────────────────
+info "Pulling MinIO Docker image (quay.io/minio/minio:latest)..."
+docker pull quay.io/minio/minio:latest 2>&1 | tail -3
+ok "MinIO image ready"
+
+# ── Wrapper script (reads credentials from env file at start time) ────────
+cat > /opt/minio/start-minio.sh <<SCRIPT
+#!/usr/bin/env bash
+set -a; source ${CONFIG_DIR}/minio.env; set +a
+docker rm -f minio 2>/dev/null || true
+exec docker run --rm --name minio \\
+    -p ${MINIO_PORT}:9000 -p ${MINIO_CONSOLE_PORT}:9001 \\
+    -v ${MINIO_DATA}:/data \\
+    -e MINIO_ROOT_USER="\$MINIO_ROOT_USER" \\
+    -e MINIO_ROOT_PASSWORD="\$MINIO_ROOT_PASSWORD" \\
+    quay.io/minio/minio:latest server /data --console-address ":9001"
+SCRIPT
+chmod +x /opt/minio/start-minio.sh
 
 if $USE_SYSTEMD; then
     cat > /etc/systemd/system/minio.service <<EOF
 [Unit]
-Description=MinIO Object Storage
-After=network-online.target
-Wants=network-online.target
+Description=MinIO Object Storage (Docker)
+After=docker.service network-online.target
+Requires=docker.service
 
 [Service]
-User=$APP_USER
-Group=$APP_USER
-EnvironmentFile=$CONFIG_DIR/minio.env
-ExecStart=$MINIO_BIN server $MINIO_DATA --address ":$MINIO_PORT" --console-address ":$MINIO_CONSOLE_PORT"
+Type=simple
+User=root
+ExecStart=/opt/minio/start-minio.sh
+ExecStop=/usr/bin/docker stop minio
 Restart=always
-RestartSec=5
-LimitNOFILE=65536
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
@@ -380,22 +376,23 @@ EOF
     systemctl daemon-reload
     systemctl enable minio 2>/dev/null || true
     systemctl restart minio 2>/dev/null || true
-    sleep 3
+    sleep 5
     ok "MinIO service started"
 else
-    MINIO_ROOT_USER=$MINIO_USER MINIO_ROOT_PASSWORD=$MINIO_PASS \
-        nohup "$MINIO_BIN" server "$MINIO_DATA" \
-            --address ":$MINIO_PORT" --console-address ":$MINIO_CONSOLE_PORT" \
-            > /var/log/minio.log 2>&1 &
+    nohup /opt/minio/start-minio.sh > /var/log/minio.log 2>&1 &
     echo $! > /var/run/minio.pid
-    sleep 3
+    sleep 5
     ok "MinIO started"
 fi
 
-sleep 2
-"$MINIO_MC" alias set local "http://localhost:$MINIO_PORT" "$MINIO_USER" "$MINIO_PASS" --quiet 2>/dev/null || true
-"$MINIO_MC" mb --ignore-existing "local/$MINIO_BUCKET" 2>/dev/null || true
-"$MINIO_MC" anonymous set download "local/$MINIO_BUCKET" 2>/dev/null || true
+# ── Create bucket via mc Docker image ────────────────────────────────────
+sleep 3
+docker run --rm --network host quay.io/minio/mc:latest \
+    alias set local "http://localhost:$MINIO_PORT" "$MINIO_USER" "$MINIO_PASS" --quiet 2>/dev/null || true
+docker run --rm --network host quay.io/minio/mc:latest \
+    mb --ignore-existing "local/$MINIO_BUCKET" 2>/dev/null || true
+docker run --rm --network host quay.io/minio/mc:latest \
+    anonymous set download "local/$MINIO_BUCKET" 2>/dev/null || true
 ok "MinIO bucket '$MINIO_BUCKET' ready"
 
 # ════════════════════════════════════════════════════════════════════════════

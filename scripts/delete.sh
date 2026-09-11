@@ -84,9 +84,12 @@ if [[ -d "$CONFIG_DIR" ]]; then
     log "Removed $CONFIG_DIR"
 fi
 
-section "Removing MinIO binaries"
-rm -f "$MINIO_BIN" "$MINIO_MC"
-log "Removed MinIO binaries"
+section "Removing MinIO (Docker)"
+docker rm -f minio 2>/dev/null || true
+docker rmi quay.io/minio/minio:latest 2>/dev/null || true
+rm -f /opt/minio/start-minio.sh
+rmdir /opt/minio 2>/dev/null || true
+log "Removed MinIO Docker container and image"
 
 if [[ "$KEEP_DATA" == false ]]; then
     section "Dropping database"
