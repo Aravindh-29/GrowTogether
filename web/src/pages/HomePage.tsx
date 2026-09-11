@@ -430,7 +430,7 @@ export default function HomePage() {
           </div>
           {pct < 100 && (
             <button
-              onClick={() => navigate('/profile')}
+              onClick={() => navigate('/profile/preview')}
               className="w-full py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.97]"
               style={{ background: 'rgba(45,212,191,0.15)', border: '1px solid rgba(45,212,191,0.3)', color: '#2dd4bf' }}>
               Complete Profile ({pct}% done)
