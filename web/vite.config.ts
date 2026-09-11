@@ -9,11 +9,17 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react':  ['react', 'react-dom', 'react-router-dom'],
-            'vendor-motion': ['framer-motion'],
-            'vendor-signal': ['@microsoft/signalr'],
-            'vendor-misc':   ['axios', 'zustand', '@tanstack/react-query', 'lucide-react', '@react-oauth/google'],
+          manualChunks(id) {
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom'))
+              return 'vendor-react'
+            if (id.includes('node_modules/framer-motion'))
+              return 'vendor-motion'
+            if (id.includes('node_modules/@microsoft/signalr'))
+              return 'vendor-signal'
+            if (id.includes('node_modules/axios') || id.includes('node_modules/zustand') ||
+                id.includes('node_modules/@tanstack') || id.includes('node_modules/lucide-react') ||
+                id.includes('node_modules/@react-oauth'))
+              return 'vendor-misc'
           },
         },
       },
