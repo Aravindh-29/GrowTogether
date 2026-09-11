@@ -314,20 +314,40 @@ chown "$APP_USER:$APP_USER" "$DEPLOY_DIR"
 step "6 / 9  MinIO"
 mkdir -p /opt/minio "$MINIO_DATA"
 
-if [[ ! -f "$MINIO_BIN" ]]; then
-    info "Downloading MinIO server binary..."
-    wget -qO "$MINIO_BIN" https://dl.min.io/server/minio/release/linux-amd64/minio
-    chmod +x "$MINIO_BIN"
-    ok "MinIO binary downloaded"
+# Helper: download with curl, verify it's a real binary (not an error page)
+download_binary() {
+    local url="$1" dest="$2" name="$3"
+    rm -f "$dest"
+    info "Downloading $name..."
+    curl -fsSL --retry 3 --retry-delay 5 -o "$dest" "$url" 2>&1 \
+        || { rm -f "$dest"; die "Failed to download $name from $url"; }
+    # Verify it's actually a binary (should not start with '<' HTML)
+    local first_byte
+    first_byte="$(head -c 1 "$dest" 2>/dev/null | od -An -tx1 | tr -d ' \n')"
+    if [[ "$first_byte" == "3c" ]]; then   # '<' = HTML error page
+        rm -f "$dest"
+        die "$name download returned an HTML page — check network/URL: $url"
+    fi
+    [[ -s "$dest" ]] || die "$name downloaded as empty file — check network"
+    chmod +x "$dest"
+}
+
+if [[ ! -f "$MINIO_BIN" ]] || [[ ! -s "$MINIO_BIN" ]]; then
+    download_binary \
+        "https://dl.min.io/server/minio/release/linux-amd64/minio" \
+        "$MINIO_BIN" "MinIO server"
+    ok "MinIO binary downloaded ($(du -sh "$MINIO_BIN" | cut -f1))"
 else
     ok "MinIO binary already present"
 fi
 
-if [[ ! -f "$MINIO_MC" ]]; then
-    info "Downloading MinIO client (mc)..."
-    wget -qO "$MINIO_MC" https://dl.min.io/client/mc/release/linux-amd64/mc
-    chmod +x "$MINIO_MC"
+if [[ ! -f "$MINIO_MC" ]] || [[ ! -s "$MINIO_MC" ]]; then
+    download_binary \
+        "https://dl.min.io/client/mc/release/linux-amd64/mc" \
+        "$MINIO_MC" "MinIO mc client"
     ok "mc downloaded"
+else
+    ok "mc already present"
 fi
 
 mkdir -p "$CONFIG_DIR"
