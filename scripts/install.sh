@@ -623,7 +623,9 @@ server {
     # MinIO object storage — proxied so images load over HTTPS without port 9000
     location /storage/ {
         proxy_pass         http://127.0.0.1:${MINIO_PORT}/;
-        proxy_set_header   Host              \$host;
+        # Must use the MinIO endpoint as Host — sending $host causes MinIO
+        # to treat the domain as a bucket name (virtual-host style) → 404
+        proxy_set_header   Host              "127.0.0.1:${MINIO_PORT}";
         proxy_set_header   X-Real-IP         \$remote_addr;
         proxy_set_header   X-Forwarded-For   \$proxy_add_x_forwarded_for;
         proxy_buffering    off;
