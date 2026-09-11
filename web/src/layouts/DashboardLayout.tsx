@@ -9,7 +9,19 @@ import GroupCallOverlay from '../components/GroupCallOverlay'
 
 const BASE_NAV_ITEMS = [
   {
-    label: 'Home', path: '/home',
+    label: 'Feed', path: '/feed',
+    icon: <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M3 3h18v2H3V3zm0 4h18v2H3V7zm0 4h12v2H3v-2zm0 4h12v2H3v-2zm0 4h8v2H3v-2z" /></svg>,
+  },
+  {
+    label: 'Your Ideas', path: '/posts',
+    icon: <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>,
+  },
+  {
+    label: 'Saved Posts', path: '/saved-posts',
+    icon: <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>,
+  },
+  {
+    label: 'Dashboard', path: '/home',
     icon: <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /></svg>,
   },
   {
@@ -142,7 +154,7 @@ export default function DashboardLayout() {
     }
   }, [])
 
-  const activeNav = BASE_NAV_ITEMS.find(item => item.path === location.pathname)?.label ?? 'Home'
+  const activeNav = BASE_NAV_ITEMS.find(item => item.path && location.pathname.startsWith(item.path))?.label ?? 'Home'
 
   const SIDEBAR_BG = 'var(--cs-bg-nav)'
   const BORDER = '1px solid var(--cs-border)'
@@ -178,7 +190,7 @@ export default function DashboardLayout() {
         <nav className="flex-1 px-3 pb-3">
           {BASE_NAV_ITEMS.map(item => {
             const isActive = activeNav === item.label
-            const badge = item.label === 'Buddies' && pendingRequests > 0
+            const badge = item.label === 'Friends' && pendingRequests > 0
               ? String(pendingRequests)
               : item.label === 'Messages' && unreadMessages > 0
                 ? String(unreadMessages)
@@ -237,7 +249,7 @@ export default function DashboardLayout() {
 
       {/* ── PAGE CONTENT ──────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Outlet />
+        <Outlet key={location.key} />
       </div>
     </div>
     <GroupCallOverlay />

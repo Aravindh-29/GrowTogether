@@ -13,6 +13,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Minio" Version="7.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
@@ -26,6 +27,7 @@
     <ProjectReference Include="..\Modules\Classrooms\CombinedStudies.Classrooms.csproj" />
     <ProjectReference Include="..\Modules\Ideas\CombinedStudies.Ideas.csproj" />
     <ProjectReference Include="..\Modules\Groups\CombinedStudies.Groups.csproj" />
+    <ProjectReference Include="..\Modules\Posts\CombinedStudies.Posts.csproj" />
     <ProjectReference Include="..\Modules\Reputation\CombinedStudies.Reputation.csproj" />
   </ItemGroup>
 

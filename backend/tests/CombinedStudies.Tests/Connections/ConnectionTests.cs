@@ -3,19 +3,22 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using CombinedStudies.Identity.DTOs;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace CombinedStudies.Tests.Connections;
 
 [Collection("Integration")]
-public class ConnectionTests(WebApplicationFactory<Program> factory)
+public class ConnectionTests(TestFixture fixture)
 {
-    private static RegisterRequest UniqueUser() => new(
-        $"conn_{Guid.NewGuid():N}@test.com", "Password123!", "Conn Tester");
+    private RegisterRequest UniqueUser()
+    {
+        var email = $"conn_{Guid.NewGuid():N}@test.com";
+        fixture.TrackEmail(email);
+        return new(email, "Password123!", "Conn Tester");
+    }
 
     private async Task<(HttpClient client, string userId)> AuthedAsync()
     {
-        var client = factory.CreateClient();
+        var client = fixture.CreateClient();
         var reg  = await client.PostAsJsonAsync("/api/identity/register", UniqueUser());
         var auth = await reg.Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization =
@@ -28,7 +31,7 @@ public class ConnectionTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task SendRequest_Returns401_WithNoToken()
     {
-        var client = factory.CreateClient();
+        var client = fixture.CreateClient();
         var resp = await client.PostAsJsonAsync("/api/connections/request",
             new { receiverId = Guid.NewGuid().ToString(), note = (string?)null });
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
@@ -38,14 +41,14 @@ public class ConnectionTests(WebApplicationFactory<Program> factory)
     public async Task GetConnections_Returns401_WithNoToken()
     {
         Assert.Equal(HttpStatusCode.Unauthorized,
-            (await factory.CreateClient().GetAsync("/api/connections")).StatusCode);
+            (await fixture.CreateClient().GetAsync("/api/connections")).StatusCode);
     }
 
     [Fact]
     public async Task GetRequests_Returns401_WithNoToken()
     {
         Assert.Equal(HttpStatusCode.Unauthorized,
-            (await factory.CreateClient().GetAsync("/api/connections/requests")).StatusCode);
+            (await fixture.CreateClient().GetAsync("/api/connections/requests")).StatusCode);
     }
 
     // ── Send request ─────────────────────────────────────────────────────────

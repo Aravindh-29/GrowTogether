@@ -84,7 +84,7 @@ public static class ChatEndpoints
             IHubContext<ChatHub> hub,
             ProfilesDbContext profiles) =>
         {
-            var msg = await svc.SendMessageAsync(id, UserId(user), dto.Text);
+            var msg = await svc.SendMessageAsync(id, UserId(user), dto.Text, dto.PostId);
             if (msg is null) return Results.NotFound();
 
             var msgDto = ToDto(msg);
@@ -111,7 +111,7 @@ public static class ChatEndpoints
     }
 
     private static MessageDto ToDto(ChatMessage m) =>
-        new(m.Id, m.ConversationId, m.SenderId, m.Text, m.SentAt, m.ReadAt);
+        new(m.Id, m.ConversationId, m.SenderId, m.Text, m.SentAt, m.ReadAt, m.PostId);
 
     private static string UserId(ClaimsPrincipal user) =>
         user.FindFirstValue(ClaimTypes.NameIdentifier)!;

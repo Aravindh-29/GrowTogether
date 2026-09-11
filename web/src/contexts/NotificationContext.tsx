@@ -24,6 +24,7 @@ interface NotificationState {
   missedCallCount: number
   pendingGroupInvites: number
   activityCount: number
+  unreadPostActivity: number
   notifBadgeCount: number
   markConvRead: (count: number) => void
   incrementUnread: () => void
@@ -44,6 +45,7 @@ const NotificationContext = createContext<NotificationState>({
   missedCallCount: 0,
   pendingGroupInvites: 0,
   activityCount: 0,
+  unreadPostActivity: 0,
   notifBadgeCount: 0,
   markConvRead: () => {},
   incrementUnread: () => {},
@@ -71,11 +73,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const totalGroupUnread = Object.values(groupUnreadCounts).reduce((a, b) => a + b, 0)
 
+  const [unreadPostActivity, setUnreadPostActivity] = useState(0)
+
   const notifBadgeCount =
     Math.max(0, pendingRequests - seenRequests) +
     Math.max(0, missedCallCount - seenMissed) +
     Math.max(0, pendingGroupInvites - seenInvites) +
-    Math.max(0, activityCount - seenActivity)
+    Math.max(0, activityCount - seenActivity) +
+    unreadPostActivity
 
   const fetchCounts = () => {
     notificationApi.getCounts()
@@ -83,6 +88,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         setPendingRequests(res.data.pendingRequests)
         setDmUnread(res.data.unreadMessages)
         setPendingGroupInvites(res.data.pendingGroupInvites ?? 0)
+        setUnreadPostActivity(res.data.unreadPostActivity ?? 0)
       })
       .catch(() => {})
   }
@@ -129,6 +135,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       missedCallCount,
       pendingGroupInvites,
       activityCount,
+      unreadPostActivity,
       notifBadgeCount,
       markConvRead: (count) => setDmUnread(prev => Math.max(0, prev - count)),
       incrementUnread: () => setDmUnread(prev => prev + 1),

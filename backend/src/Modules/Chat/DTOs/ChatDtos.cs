@@ -4,7 +4,7 @@ namespace CombinedStudies.Chat.DTOs;
 
 public record StartConversationDto([Required] string UserId);
 
-public record SendMessageDto([Required, MaxLength(4000)] string Text);
+public record SendMessageDto([Required, MaxLength(4000)] string Text, Guid? PostId = null);
 
 public record ConversationSummaryDto(
     Guid Id,
@@ -23,5 +23,6 @@ public record MessageDto(
     string SenderId,
     string Text,
     DateTime SentAt,
-    DateTime? ReadAt
+    DateTime? ReadAt,
+    Guid? PostId = null
 );

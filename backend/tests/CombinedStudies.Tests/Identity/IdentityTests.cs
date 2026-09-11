@@ -1,20 +1,20 @@
 using System.Net;
 using System.Net.Http.Json;
 using CombinedStudies.Identity.DTOs;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace CombinedStudies.Tests.Identity;
 
 [Collection("Integration")]
-public class IdentityTests(WebApplicationFactory<Program> factory)
+public class IdentityTests(TestFixture fixture)
 {
-    private HttpClient Client => factory.CreateClient();
+    private HttpClient Client => fixture.CreateClient();
 
-    private static RegisterRequest UniqueRegister() => new(
-        $"user_{Guid.NewGuid():N}@test.com",
-        "Password123!",
-        "Test User"
-    );
+    private RegisterRequest UniqueRegister()
+    {
+        var email = $"user_{Guid.NewGuid():N}@test.com";
+        fixture.TrackEmail(email);
+        return new(email, "Password123!", "Test User");
+    }
 
     [Fact]
     public async Task Register_Returns200_WithToken()
@@ -78,7 +78,7 @@ public class IdentityTests(WebApplicationFactory<Program> factory)
         var regResp = await Client.PostAsJsonAsync("/api/identity/register", req);
         var auth = await regResp.Content.ReadFromJsonAsync<AuthResponse>();
 
-        var authedClient = factory.CreateClient();
+        var authedClient = fixture.CreateClient();
         authedClient.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth!.Token);
 

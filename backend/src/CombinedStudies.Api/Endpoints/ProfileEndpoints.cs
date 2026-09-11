@@ -250,7 +250,9 @@ public static class ProfileEndpoints
             if (!string.IsNullOrWhiteSpace(skill))
             {
                 var sl = skill.Trim().ToLower();
-                var candidates = await query.Take(500).ToListAsync();
+                var candidates = (await query.Take(1000).ToListAsync())
+                    .DistinctBy(p => p.UserId)
+                    .ToList();
                 var matched = candidates
                     .Where(p => p.SubjectsKnown.Concat(p.SubjectsWanted)
                         .Any(s => FuzzySkillSearch(s.Trim().ToLower(), sl)))
@@ -307,7 +309,10 @@ public static class ProfileEndpoints
                 }
             }
 
-            var results = await query.Take(clampedSize + 1).ToListAsync();
+            var results = (await query.Take(clampedSize * 3).ToListAsync())
+                .DistinctBy(p => p.UserId)
+                .Take(clampedSize + 1)
+                .ToList();
             var hasMore = results.Count > clampedSize;
             if (hasMore) results = results.Take(clampedSize).ToList();
             var nextCursor = hasMore ? results.Last().Id.ToString() : null;

@@ -8,6 +8,6 @@ public interface IChatService
     Task<Conversation?> GetConversationAsync(Guid convId, string userId);
     Task<List<Conversation>> GetConversationsAsync(string userId);
     Task<List<ChatMessage>> GetMessagesAsync(Guid convId, string userId);
-    Task<ChatMessage?> SendMessageAsync(Guid convId, string senderId, string text);
+    Task<ChatMessage?> SendMessageAsync(Guid convId, string senderId, string text, Guid? postId = null);
     Task MarkReadAsync(Guid convId, string userId);
 }

@@ -18,6 +18,9 @@ import SetupPage from './pages/SetupPage'
 import SettingsPage from './pages/SettingsPage'
 import ProgressPage from './pages/ProgressPage'
 import StudyGroupsPage from './pages/StudyGroupsPage'
+import FeedPage from './pages/FeedPage'
+import PostsPage from './pages/PostsPage'
+import SavedPostsPage from './pages/SavedPostsPage'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { CallProvider } from './contexts/CallContext'
 import CallOverlay from './components/CallOverlay'
@@ -45,6 +48,9 @@ export default function App() {
         {/* Dashboard routes share the persistent sidebar layout */}
         <Route element={<ProtectedRoute><NotificationProvider><CallProvider><CallOverlay /><DashboardLayout /></CallProvider></NotificationProvider></ProtectedRoute>}>
           <Route path="/home" element={<HomePage />} />
+          <Route path="/feed" element={<FeedPage />} />
+          <Route path="/posts" element={<PostsPage />} />
+          <Route path="/saved-posts" element={<SavedPostsPage />} />
           <Route path="/partners" element={<FindPartnersPage />} />
           <Route path="/suggested-buddies" element={<SuggestedBuddiesPage />} />
           <Route path="/buddies" element={<BuddiesPage />} />

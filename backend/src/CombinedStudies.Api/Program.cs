@@ -3,11 +3,13 @@ using System.Text.Json.Serialization;
 using CombinedStudies.Api.Endpoints;
 using CombinedStudies.Api.Hubs;
 using CombinedStudies.Api.Services;
+using Minio;
 using CombinedStudies.Groups.Services;
 using CombinedStudies.Chat;
 using CombinedStudies.Connections;
 using CombinedStudies.Groups;
 using CombinedStudies.Identity;
+using CombinedStudies.Posts;
 using CombinedStudies.Profiles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -45,10 +47,11 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddCors(opts =>
     opts.AddDefaultPolicy(p => p
-        .WithOrigins("http://localhost:3000", "http://localhost:5173",
-                     "https://localhost:5173",
-                     "https://192.168.8.218:5173",
-                     "http://192.168.8.218:5173")
+        .SetIsOriginAllowed(origin =>
+        {
+            var uri = new Uri(origin);
+            return uri.Host is "localhost" or "127.0.0.1" || uri.Host.StartsWith("192.168.");
+        })
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials()));
@@ -92,6 +95,15 @@ builder.Services.AddConnectionsModule(builder.Configuration);
 builder.Services.AddChatModule(builder.Configuration);
 builder.Services.AddGroupsModule(builder.Configuration);
 builder.Services.AddScoped<IGroupNotifier, SignalRGroupNotifier>();
+builder.Services.AddPostsModule(builder.Configuration);
+
+// MinIO storage
+var minioCfg = builder.Configuration.GetSection("MinIO");
+builder.Services.AddMinio(opts => opts
+    .WithEndpoint(minioCfg["Endpoint"] ?? "localhost:9000")
+    .WithCredentials(minioCfg["AccessKey"] ?? "minioadmin", minioCfg["SecretKey"] ?? "minioadmin")
+    .WithSSL(false));
+builder.Services.AddScoped<IStorageService, MinioStorageService>();
 
 var app = builder.Build();
 
@@ -100,6 +112,7 @@ await app.Services.MigrateProfilesAsync();
 await app.Services.MigrateConnectionsAsync();
 await app.Services.MigrateChatAsync();
 await app.Services.MigrateGroupsAsync();
+await app.Services.MigratePostsAsync();
 
 if (app.Environment.IsDevelopment())
 {
@@ -123,6 +136,7 @@ app.MapConnectionEndpoints();
 app.MapChatEndpoints();
 app.MapGroupEndpoints();
 app.MapNotificationEndpoints();
+app.MapPostEndpoints();
 
 // Call status — lightweight check so UI can show "Join" vs "Start call"
 app.MapGet("/api/groups/{groupId}/call-active", (string groupId) =>

@@ -214,13 +214,17 @@ export default function FindPartnersPage() {
   // Stable array for dep comparison — Set identity changes on every render
   const selectedCountriesArr = useMemo(() => [...selectedCountries].sort(), [selectedCountries])
 
-  const applyRaw = (raw: Array<ProfileSearchResult & { connectionStatus?: string; connectionId?: string; isSender?: boolean }>): SearchResult[] =>
-    raw.map(p => ({
-      ...p,
-      connectionStatus: (p.connectionStatus ?? 'None') as ConnStatus,
-      connectionId: p.connectionId,
-      isSender: p.isSender ?? false,
-    }))
+  const applyRaw = (raw: Array<ProfileSearchResult & { connectionStatus?: string; connectionId?: string; isSender?: boolean }>): SearchResult[] => {
+    const seen = new Set<string>()
+    return raw
+      .filter(p => { if (seen.has(p.userId)) return false; seen.add(p.userId); return true })
+      .map(p => ({
+        ...p,
+        connectionStatus: (p.connectionStatus ?? 'None') as ConnStatus,
+        connectionId: p.connectionId,
+        isSender: p.isSender ?? false,
+      }))
+  }
 
   const doSearch = useCallback(async (q: string, role: string, skill: string, countries: string[]) => {
     setLoading(true)
@@ -255,7 +259,11 @@ export default function FindPartnersPage() {
         nextCursor,
         PAGE_SIZE
       )
-      setResults(prev => [...prev, ...applyRaw(r.data.items)])
+      setResults(prev => {
+        const existingIds = new Set(prev.map(p => p.userId))
+        const newItems = applyRaw(r.data.items).filter(p => !existingIds.has(p.userId))
+        return [...prev, ...newItems]
+      })
       setHasMore(r.data.hasMore)
       setNextCursor(r.data.nextCursor)
     } catch { /* ignore */ }
@@ -341,17 +349,30 @@ export default function FindPartnersPage() {
             ))}
           </div>
 
-          {!loading && results.length > 0 && (
-            <span className="text-xs font-semibold ml-auto" style={{ color:'var(--cs-text-3)' }}>
-              {results.length} loaded{hasMore ? ' · more available' : ''}
-            </span>
-          )}
-          {loading && (
-            <span className="text-xs font-semibold ml-auto flex items-center gap-1.5" style={{ color:'#2dd4bf' }}>
-              <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-              Searching...
-            </span>
-          )}
+          <div className="flex items-center gap-2 ml-auto">
+            {!loading && results.length > 0 && (
+              <span className="text-xs font-semibold" style={{ color:'var(--cs-text-3)' }}>
+                {results.length} loaded{hasMore ? ' · more available' : ''}
+              </span>
+            )}
+            {loading && (
+              <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color:'#2dd4bf' }}>
+                <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                Searching...
+              </span>
+            )}
+            <button
+              onClick={() => doSearch(search, roleFilter, skillInput, selectedCountriesArr)}
+              disabled={loading}
+              title="Refresh results"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 disabled:opacity-40"
+              style={{ background:'rgba(45,212,191,0.1)', color:'#2dd4bf', border:'1px solid rgba(45,212,191,0.25)' }}>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5" style={{ transform: loading ? 'rotate(360deg)' : 'rotate(0deg)', transition: 'transform 0.5s' }}>
+                <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+              </svg>
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Row 2: skill filter (incremental) + country filter */}

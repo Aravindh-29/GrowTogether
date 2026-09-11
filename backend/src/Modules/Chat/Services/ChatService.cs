@@ -43,12 +43,12 @@ public class ChatService(ChatDbContext db) : IChatService
             .ToListAsync();
     }
 
-    public async Task<ChatMessage?> SendMessageAsync(Guid convId, string senderId, string text)
+    public async Task<ChatMessage?> SendMessageAsync(Guid convId, string senderId, string text, Guid? postId = null)
     {
         var conv = await db.Conversations.FindAsync(convId);
         if (conv is null || (conv.User1Id != senderId && conv.User2Id != senderId)) return null;
 
-        var msg = ChatMessage.Create(convId, senderId, text);
+        var msg = ChatMessage.Create(convId, senderId, text, postId);
         db.Messages.Add(msg);
         conv.UpdateLastMessage(text);
         await db.SaveChangesAsync();

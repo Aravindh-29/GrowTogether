@@ -11,11 +11,14 @@ public class ChatMessage
 
     private ChatMessage() { }
 
-    public static ChatMessage Create(Guid convId, string senderId, string text) => new()
+    public Guid? PostId { get; private set; }
+
+    public static ChatMessage Create(Guid convId, string senderId, string text, Guid? postId = null) => new()
     {
         ConversationId = convId,
         SenderId = senderId,
         Text = text,
+        PostId = postId,
         SentAt = DateTime.UtcNow
     };
 

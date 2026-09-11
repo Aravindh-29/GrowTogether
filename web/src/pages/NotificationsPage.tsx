@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { connectionApi, type ConnectionWithProfile } from '../api/connectionApi'
 import { groupApi } from '../api/groupApi'
 import type { GroupInviteDto } from '../api/groupApi'
+import { postApi, type PostActivityDto } from '../api/postApi'
 import { useNotifications } from '../contexts/NotificationContext'
 import { useCall } from '../contexts/CallContext'
 
@@ -60,6 +61,7 @@ export default function NotificationsPage() {
   const [inviteActing, setInviteActing] = useState<string | null>(null)
   const [missedCalls, setMissedCalls] = useState<MissedCallRecord[]>(readMissedCalls)
   const [activity, setActivity] = useState<ActivityItem[]>(readActivity)
+  const [postActivity, setPostActivity] = useState<PostActivityDto[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [, forceUpdate] = useState(0)
 
@@ -68,10 +70,12 @@ export default function NotificationsPage() {
     Promise.all([
       connectionApi.getRequests(),
       groupApi.getMyInvites(),
+      postApi.getActivity(30),
     ])
-      .then(([connRes, inviteRes]) => {
+      .then(([connRes, inviteRes, postActRes]) => {
         setRequests(connRes.data)
         setGroupInvites(inviteRes.data)
+        setPostActivity(postActRes.data)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -93,6 +97,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     load()
     clearNotificationBadge()
+    postApi.markActivityRead().catch(() => {})
     timerRef.current = setInterval(() => forceUpdate(n => n + 1), 60000)
     const missedHandler = () => setMissedCalls(readMissedCalls())
     const activityHandler = () => setActivity(readActivity())
@@ -511,6 +516,66 @@ export default function NotificationsPage() {
             </div>
           )}
         </div>
+
+        {/* ── Post Activity section ─────────────────────────────────────── */}
+        {postActivity.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--cs-text-3)' }}>
+                Post Activity
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(45,212,191,0.15)', color: '#2dd4bf' }}>
+                {postActivity.length}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {postActivity.map(item => (
+                <div key={item.id}
+                  className="flex items-start gap-3 px-4 py-3 rounded-2xl transition-all cursor-pointer hover:opacity-90"
+                  style={{
+                    background: 'var(--cs-input-bg)',
+                    border: `1px solid ${item.isRead ? 'var(--cs-border)' : 'rgba(45,212,191,0.25)'}`,
+                  }}
+                  onClick={() => navigate(`/profile/view/${item.actorId}`)}>
+                  <div className="relative flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-white"
+                      style={{ background: 'linear-gradient(135deg,#0d9488,#0ea5e9)', fontSize: 15 }}>
+                      {item.actorAvatar
+                        ? <img src={item.actorAvatar} alt={item.actorName} className="w-full h-full object-cover" />
+                        : item.actorName[0]?.toUpperCase()}
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 text-sm"
+                      style={{ lineHeight: 1 }}>
+                      {item.type === 'agree' ? '✅' : item.type === 'disagree' ? '👎' : '💬'}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm leading-snug" style={{ color: 'var(--cs-text-1)' }}>
+                      <span className="font-semibold">{item.actorName}</span>{' '}
+                      {item.type === 'agree' ? 'agreed with your post' :
+                        item.type === 'disagree' ? 'disagreed with your post' :
+                        'commented on your post'}
+                    </p>
+                    {item.extraText && (
+                      <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--cs-text-3)' }}>
+                        "{item.extraText}"
+                      </p>
+                    )}
+                    <p className="text-[11px] mt-1" style={{ color: 'var(--cs-text-3)' }}>
+                      {timeAgo(item.createdAt)}
+                    </p>
+                  </div>
+                  {!item.isRead && (
+                    <div className="w-2 h-2 rounded-full flex-shrink-0 mt-2"
+                      style={{ background: '#2dd4bf' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )

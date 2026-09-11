@@ -19,6 +19,7 @@ export interface ChatMessage {
   text: string
   sentAt: string
   readAt?: string
+  postId?: string | null
 }
 
 export const chatApi = {
@@ -26,8 +27,8 @@ export const chatApi = {
     api.post<{ id: string }>('/chats/start', { userId }),
   getConversations: () => api.get<ConversationSummary[]>('/chats'),
   getMessages: (convId: string) => api.get<ChatMessage[]>(`/chats/${convId}/messages`),
-  sendMessage: (convId: string, text: string) =>
-    api.post<ChatMessage>(`/chats/${convId}/messages`, { text }),
+  sendMessage: (convId: string, text: string, postId?: string | null) =>
+    api.post<ChatMessage>(`/chats/${convId}/messages`, { text, postId: postId ?? null }),
   markRead: (convId: string) => api.post(`/chats/${convId}/read`),
 }
 

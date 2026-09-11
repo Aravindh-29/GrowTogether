@@ -3,19 +3,22 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using CombinedStudies.Identity.DTOs;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace CombinedStudies.Tests.Chat;
 
 [Collection("Integration")]
-public class ChatTests(WebApplicationFactory<Program> factory)
+public class ChatTests(TestFixture fixture)
 {
-    private static RegisterRequest UniqueUser() => new(
-        $"chat_{Guid.NewGuid():N}@test.com", "Password123!", "Chat Tester");
+    private RegisterRequest UniqueUser()
+    {
+        var email = $"chat_{Guid.NewGuid():N}@test.com";
+        fixture.TrackEmail(email);
+        return new(email, "Password123!", "Chat Tester");
+    }
 
     private async Task<(HttpClient client, string userId)> AuthedAsync()
     {
-        var client = factory.CreateClient();
+        var client = fixture.CreateClient();
         var reg  = await client.PostAsJsonAsync("/api/identity/register", UniqueUser());
         var auth = await reg.Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization =
@@ -45,7 +48,7 @@ public class ChatTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task StartConversation_Returns401_WithNoToken()
     {
-        var resp = await factory.CreateClient().PostAsJsonAsync("/api/chats/start",
+        var resp = await fixture.CreateClient().PostAsJsonAsync("/api/chats/start",
             new { userId = Guid.NewGuid().ToString() });
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
     }
@@ -54,14 +57,14 @@ public class ChatTests(WebApplicationFactory<Program> factory)
     public async Task GetConversations_Returns401_WithNoToken()
     {
         Assert.Equal(HttpStatusCode.Unauthorized,
-            (await factory.CreateClient().GetAsync("/api/chats")).StatusCode);
+            (await fixture.CreateClient().GetAsync("/api/chats")).StatusCode);
     }
 
     [Fact]
     public async Task GetMessages_Returns401_WithNoToken()
     {
         Assert.Equal(HttpStatusCode.Unauthorized,
-            (await factory.CreateClient().GetAsync($"/api/chats/{Guid.NewGuid()}/messages")).StatusCode);
+            (await fixture.CreateClient().GetAsync($"/api/chats/{Guid.NewGuid()}/messages")).StatusCode);
     }
 
     // ── Start conversation ────────────────────────────────────────────────────

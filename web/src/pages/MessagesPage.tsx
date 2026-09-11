@@ -7,6 +7,9 @@ import { notificationApi } from '../api/notificationApi'
 import { useNotifications } from '../contexts/NotificationContext'
 import { useCall } from '../contexts/CallContext'
 import { useGroupCall } from '../contexts/GroupCallContext'
+import { postApi, type PostDto } from '../api/postApi'
+import { PostCard, SendModal } from './FeedPage'
+import { useAuthStore } from '../store/authStore'
 
 function Avatar({ url, name, size = 40 }: { url?: string | null; name: string; size?: number }) {
   const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -17,6 +20,98 @@ function Avatar({ url, name, size = 40 }: { url?: string | null; name: string; s
       style={{ width: size, height: size, background: bg, fontSize: size * 0.32 }}>
       {url ? <img src={url} alt="" className="w-full h-full object-cover"/> : initials}
     </div>
+  )
+}
+
+function SharedPostBubble({ postId, mine }: { postId: string; mine: boolean }) {
+  const [post, setPost] = useState<PostDto | null>(null)
+  const [open, setOpen] = useState(false)
+  const [sendPost, setSendPost] = useState<PostDto | null>(null)
+  const user = useAuthStore(s => s.user)
+
+  useEffect(() => {
+    postApi.getById(postId).then(r => setPost(r.data)).catch(() => {})
+  }, [postId])
+
+  const update = (updated: PostDto) => setPost(updated)
+
+  const handleLike    = async (id: string) => { try { const r = await postApi.toggleLike(id);       update(r.data) } catch {} }
+  const handleAgree   = async (id: string) => { try { const r = await postApi.react(id, 'agree');   update(r.data) } catch {} }
+  const handleDisagree= async (id: string) => { try { const r = await postApi.react(id, 'disagree');update(r.data) } catch {} }
+  const handleRepost  = async (id: string) => { try { const r = await postApi.toggleRepost(id);     update(r.data) } catch {} }
+  const handleSave    = async (id: string) => { try { const r = await postApi.save(id);              update(r.data) } catch {} }
+  const handleVote    = async (id: string, opt: number) => { try { const r = await postApi.votePoll(id, opt); update(r.data) } catch {} }
+
+  if (!post) return (
+    <div className="px-4 py-3 rounded-2xl text-sm flex items-center gap-2"
+      style={mine
+        ? { background: 'linear-gradient(135deg,#0d9488,#0ea5e9)', color: 'white' }
+        : { background: 'var(--cs-bg-card)', color: 'var(--cs-text-3)', border: '1px solid var(--cs-border)' }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 opacity-60"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      Shared a post…
+    </div>
+  )
+
+  const firstImage = post.imageUrls?.[0]
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)}
+        className="w-72 text-left rounded-2xl overflow-hidden transition-all hover:opacity-90 active:scale-[0.98]"
+        style={{ background: 'var(--cs-bg-card)', border: '1px solid var(--cs-border)', boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}>
+        {firstImage && (
+          <img src={firstImage} alt="" className="w-full object-cover" style={{ maxHeight: 140 }} />
+        )}
+        <div className="p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"
+              style={{ background: '#6366f1' }}>
+              {post.authorAvatar
+                ? <img src={post.authorAvatar} className="w-full h-full object-cover" alt=""/>
+                : post.authorName?.[0]?.toUpperCase()}
+            </div>
+            <span className="text-xs font-semibold truncate" style={{ color: 'var(--cs-text-1)' }}>{post.authorName}</span>
+          </div>
+          <p className="text-xs leading-relaxed line-clamp-3" style={{ color: 'var(--cs-text-2)' }}>{post.content}</p>
+          <div className="mt-2 flex items-center gap-1 text-[11px]" style={{ color: '#2dd4bf' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Shared post · tap to view
+          </div>
+        </div>
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}>
+          <div className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden" style={{ maxHeight: '90vh', overflowY: 'auto', background: 'var(--cs-bg-card)' }}>
+            <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--cs-border)' }}>
+              <span className="text-sm font-bold" style={{ color: 'var(--cs-text-1)' }}>Shared post</span>
+              <button onClick={() => setOpen(false)} className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70"
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--cs-text-2)' }}>✕</button>
+            </div>
+            <PostCard
+              post={post}
+              myUserId={user?.userId ?? ''}
+              myName={user?.displayName ?? ''}
+              myAvatar={null}
+              onLike={handleLike}
+              onRepost={handleRepost}
+              onSend={p => { setSendPost(p); }}
+              onDelete={() => {}}
+              onAgree={handleAgree}
+              onDisagree={handleDisagree}
+              onSave={handleSave}
+              onVotePoll={handleVote}
+            />
+          </div>
+        </div>
+      )}
+
+      {sendPost && (
+        <SendModal post={sendPost} onClose={() => setSendPost(null)} />
+      )}
+    </>
   )
 }
 
@@ -641,13 +736,19 @@ export default function MessagesPage() {
                       const mine = m.senderId === myUserId
                       return (
                         <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div className="max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm"
-                            style={mine
-                              ? { background:'linear-gradient(135deg,#0d9488,#0ea5e9)', color:'white', borderBottomRightRadius:4 }
-                              : { background:'var(--cs-bg-card)', color:'var(--cs-text-1)', border:'1px solid var(--cs-border)', borderBottomLeftRadius:4 }}>
-                            <p className="whitespace-pre-wrap break-words">{m.text}</p>
-                            <p className={`text-[10px] mt-1 ${mine ? 'text-right opacity-70' : ''}`}
-                              style={!mine ? { color:'var(--cs-text-3)' } : {}}>
+                          <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                            {m.postId ? (
+                              <SharedPostBubble postId={m.postId} mine={mine} />
+                            ) : (
+                              <div className="max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm"
+                                style={mine
+                                  ? { background:'linear-gradient(135deg,#0d9488,#0ea5e9)', color:'white', borderBottomRightRadius:4 }
+                                  : { background:'var(--cs-bg-card)', color:'var(--cs-text-1)', border:'1px solid var(--cs-border)', borderBottomLeftRadius:4 }}>
+                                <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                              </div>
+                            )}
+                            <p className={`text-[10px] mt-1 px-1 ${mine ? 'text-right opacity-70' : ''}`}
+                              style={{ color:'var(--cs-text-3)' }}>
                               {timeLabel(m.sentAt)}
                             </p>
                           </div>

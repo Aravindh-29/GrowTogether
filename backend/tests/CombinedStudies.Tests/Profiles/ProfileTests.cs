@@ -3,22 +3,22 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CombinedStudies.Identity.DTOs;
 using CombinedStudies.Profiles.DTOs;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace CombinedStudies.Tests.Profiles;
 
 [Collection("Integration")]
-public class ProfileTests(WebApplicationFactory<Program> factory)
+public class ProfileTests(TestFixture fixture)
 {
-    private static RegisterRequest UniqueRegister() => new(
-        $"profile_{Guid.NewGuid():N}@test.com",
-        "Password123!",
-        "Profile Tester"
-    );
+    private RegisterRequest UniqueRegister()
+    {
+        var email = $"profile_{Guid.NewGuid():N}@test.com";
+        fixture.TrackEmail(email);
+        return new(email, "Password123!", "Profile Tester");
+    }
 
     private async Task<HttpClient> AuthedClientAsync()
     {
-        var client = factory.CreateClient();
+        var client = fixture.CreateClient();
         var reg  = await client.PostAsJsonAsync("/api/identity/register", UniqueRegister());
         var auth = await reg.Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization =
@@ -46,7 +46,7 @@ public class ProfileTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task GetMyProfile_Returns401_WithNoToken()
     {
-        var client = factory.CreateClient();
+        var client = fixture.CreateClient();
         var resp = await client.GetAsync("/api/profiles/me");
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
     }
@@ -54,7 +54,7 @@ public class ProfileTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task CreateProfile_Returns401_WithNoToken()
     {
-        var client = factory.CreateClient();
+        var client = fixture.CreateClient();
         var resp = await client.PostAsJsonAsync("/api/profiles", SampleCreate());
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
     }
@@ -62,7 +62,7 @@ public class ProfileTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task UpdatePersonal_Returns401_WithNoToken()
     {
-        var client = factory.CreateClient();
+        var client = fixture.CreateClient();
         var resp = await client.PatchAsJsonAsync("/api/profiles/me/personal",
             BasicPersonal("John", null, "Doe"));
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
