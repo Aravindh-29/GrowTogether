@@ -621,7 +621,8 @@ server {
     client_max_body_size 30M;
 
     # MinIO object storage — proxied so images load over HTTPS without port 9000
-    location /storage/ {
+    # ^~ makes this prefix location beat the regex location below (which also matches .jpg/.jpeg)
+    location ^~ /storage/ {
         proxy_pass         http://127.0.0.1:${MINIO_PORT}/;
         # Must use the MinIO endpoint as Host — sending $host causes MinIO
         # to treat the domain as a bucket name (virtual-host style) → 404
