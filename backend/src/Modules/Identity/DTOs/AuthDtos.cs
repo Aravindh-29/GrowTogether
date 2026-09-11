@@ -19,3 +19,10 @@ public record AuthResponse(
     string Email,
     string DisplayName
 );
+
+public record ChangePasswordRequest(
+    [Required] string CurrentPassword,
+    [Required, MinLength(8), MaxLength(100)] string NewPassword
+);
+
+public record GoogleLoginRequest([Required] string AccessToken);

@@ -3,7 +3,13 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '../api/authApi'
 import ConnectionGraphic from '../components/ConnectionGraphic'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 import { useAuthStore } from '../store/authStore'
+
+const GOOGLE_READY = (() => {
+  const id = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
+  return id.length > 0 && !id.startsWith('REPLACE_')
+})()
 
 /* ── variants ────────────────────────────────────────────────────────── */
 const titleContainer = {
@@ -62,11 +68,11 @@ export default function LoginPage() {
   const [email,      setEmail]      = useState('')
   const [password,   setPassword]   = useState('')
   const [error,      setError]      = useState('')
-  const [loading,       setLoading]       = useState(false)
-  const [shake,         setShake]         = useState(false)
-  const [emailErr,      setEmailErr]      = useState(false)
-  const [passwordErr,   setPasswordErr]   = useState(false)
-  const [showPass,      setShowPass]      = useState(false)
+  const [loading,    setLoading]    = useState(false)
+  const [shake,      setShake]      = useState(false)
+  const [emailErr,   setEmailErr]   = useState(false)
+  const [passwordErr,setPasswordErr]= useState(false)
+  const [showPass,   setShowPass]   = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -311,18 +317,21 @@ export default function LoginPage() {
                         <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.09)' }}/>
                       </motion.div>
 
-                      {/* Google button */}
+                      {/* Google button — only mounted when Client ID is configured */}
                       <motion.div variants={fv} className="mb-5">
-                        <button
-                          type="button"
-                          className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold text-white/85 transition-all duration-150 active:scale-[0.99]"
-                          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.13)' }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)' }}
-                        >
-                          <GoogleIcon/>
-                          Continue with Google
-                        </button>
+                        {GOOGLE_READY
+                          ? <GoogleSignInButton formDisabled={loading} onError={setError} />
+                          : (
+                            <button
+                              type="button" disabled
+                              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold text-white/40 cursor-not-allowed"
+                              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                              title="Google sign-in not configured yet"
+                            >
+                              <GoogleIcon />
+                              Continue with Google
+                            </button>
+                          )}
                       </motion.div>
 
                       {/* register link */}

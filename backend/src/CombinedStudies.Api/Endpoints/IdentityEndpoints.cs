@@ -39,13 +39,40 @@ public static class IdentityEndpoints
         {
             return Results.Ok(new
             {
-                UserId = user.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub),
-                Email  = user.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email),
-                Name   = user.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Name)
+                UserId = user.FindFirstValue(ClaimTypes.NameIdentifier),
+                Email  = user.FindFirstValue(ClaimTypes.Email),
+                Name   = user.FindFirstValue(ClaimTypes.Name)
             });
         })
         .RequireAuthorization()
         .WithName("Me")
+        .WithOpenApi();
+
+        group.MapPost("/google-auth", async (
+            [FromBody] GoogleLoginRequest req,
+            IAuthService auth) =>
+        {
+            var (response, error) = await auth.GoogleLoginAsync(req.AccessToken);
+            return error is not null
+                ? Results.Unauthorized()
+                : Results.Ok(response);
+        })
+        .WithName("GoogleLogin")
+        .WithOpenApi();
+
+        group.MapPost("/change-password", async (
+            [FromBody] ChangePasswordRequest req,
+            ClaimsPrincipal user,
+            IAuthService auth) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var (success, error) = await auth.ChangePasswordAsync(userId, req);
+            return success
+                ? Results.NoContent()
+                : Results.BadRequest(new { error });
+        })
+        .RequireAuthorization()
+        .WithName("ChangePassword")
         .WithOpenApi();
 
         return app;

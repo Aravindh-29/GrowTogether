@@ -6,4 +6,6 @@ public interface IAuthService
 {
     Task<(AuthResponse? Response, string? Error)> RegisterAsync(RegisterRequest request);
     Task<(AuthResponse? Response, string? Error)> LoginAsync(LoginRequest request);
+    Task<(AuthResponse? Response, string? Error)> GoogleLoginAsync(string accessToken);
+    Task<(bool Success, string? Error)> ChangePasswordAsync(string userId, ChangePasswordRequest request);
 }

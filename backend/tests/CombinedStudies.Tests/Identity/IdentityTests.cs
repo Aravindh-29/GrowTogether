@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace CombinedStudies.Tests.Identity;
 
+[Collection("Integration")]
 public class IdentityTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
 {
     private HttpClient Client => factory.CreateClient();
 

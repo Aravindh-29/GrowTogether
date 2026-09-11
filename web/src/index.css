@@ -2,16 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ──────────────────────────────────────────────────── */
+:root, [data-theme="dark"] {
+  --cs-bg:           #020d1f;
+  --cs-bg-card:      rgba(9,22,50,0.84);
+  --cs-bg-nav:       rgba(9,22,50,0.95);
+  --cs-bg-elevated:  rgba(9,22,50,0.72);
+  --cs-border:       rgba(255,255,255,0.1);
+  --cs-border-card:  rgba(255,255,255,0.08);
+  --cs-text-1:       #ffffff;
+  --cs-text-2:       rgba(255,255,255,0.65);
+  --cs-text-3:       rgba(255,255,255,0.35);
+  --cs-text-4:       rgba(255,255,255,0.2);
+  --cs-input-bg:     rgba(255,255,255,0.05);
+  --cs-hover:        rgba(255,255,255,0.05);
+  --cs-shadow:       rgba(0,0,0,0.45);
+  --cs-blur:         blur(16px);
+}
+
+[data-theme="light"] {
+  --cs-bg:           #f0f2f5;
+  --cs-bg-card:      #ffffff;
+  --cs-bg-nav:       #ffffff;
+  --cs-bg-elevated:  #ffffff;
+  --cs-border:       rgba(0,0,0,0.1);
+  --cs-border-card:  rgba(0,0,0,0.08);
+  --cs-text-1:       #111827;
+  --cs-text-2:       #4b5563;
+  --cs-text-3:       #9ca3af;
+  --cs-text-4:       #d1d5db;
+  --cs-input-bg:     rgba(0,0,0,0.04);
+  --cs-hover:        rgba(0,0,0,0.04);
+  --cs-shadow:       rgba(0,0,0,0.08);
+  --cs-blur:         blur(0px);
+}
+
+/* ── Scrollbars — thin, theme-coloured, invisible until hovered ────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(45,212,191,0.25) transparent;
+}
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(45,212,191,0.25);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(45,212,191,0.55); }
+
+[data-theme="light"] * {
+  scrollbar-color: rgba(0,0,0,0.12) transparent;
+}
+[data-theme="light"] *::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
+[data-theme="light"] *::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.28); }
+
+/* ── Utility classes that use tokens ───────────────────────────────── */
+.cs-bg      { background: var(--cs-bg); }
+.cs-card    { background: var(--cs-bg-card); border: 1px solid var(--cs-border-card); }
+.cs-nav     { background: var(--cs-bg-nav); border-color: var(--cs-border); }
+.cs-text-1  { color: var(--cs-text-1); }
+.cs-text-2  { color: var(--cs-text-2); }
+.cs-text-3  { color: var(--cs-text-3); }
+.cs-border  { border-color: var(--cs-border); }
+.cs-input   { background: var(--cs-input-bg); border: 1px solid var(--cs-border); color: var(--cs-text-1); }
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
-  body {
-    @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100;
-  }
+  body { background: var(--cs-bg); color: var(--cs-text-1); }
 }
 
 @layer components {

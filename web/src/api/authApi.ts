@@ -7,7 +7,8 @@ export interface AuthResponse {
   displayName: string
 }
 
-const api = axios.create({ baseURL: '/api' })
+const API_ORIGIN = import.meta.env.VITE_API_URL ?? ''
+const api = axios.create({ baseURL: `${API_ORIGIN}/api` })
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('cs_token')
@@ -22,8 +23,14 @@ export const authApi = {
   login: (email: string, password: string) =>
     api.post<AuthResponse>('/identity/login', { email, password }),
 
+  googleLogin: (accessToken: string) =>
+    api.post<AuthResponse>('/identity/google-auth', { accessToken }),
+
   me: () =>
     api.get<{ userId: string; email: string; name: string }>('/identity/me'),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post('/identity/change-password', { currentPassword, newPassword }),
 }
 
 export default api

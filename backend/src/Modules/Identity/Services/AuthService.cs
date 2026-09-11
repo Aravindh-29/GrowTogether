@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
 using CombinedStudies.Identity.Data;
@@ -26,9 +27,30 @@ public class AuthService(IdentityDbContext db, IConfiguration config) : IAuthSer
         );
 
         db.Users.Add(user);
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+        {
+            // Race condition: another request registered the same email just before us
+            return (null, "Email is already registered.");
+        }
 
         return (IssueToken(user), null);
+    }
+
+    public async Task<(bool Success, string? Error)> ChangePasswordAsync(string userId, ChangePasswordRequest request)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == Guid.Parse(userId));
+        if (user is null) return (false, "User not found.");
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            return (false, "Current password is incorrect.");
+
+        user.UpdatePasswordHash(BCrypt.Net.BCrypt.HashPassword(request.NewPassword));
+        await db.SaveChangesAsync();
+        return (true, null);
     }
 
     public async Task<(AuthResponse? Response, string? Error)> LoginAsync(LoginRequest request)
@@ -41,6 +63,47 @@ public class AuthService(IdentityDbContext db, IConfiguration config) : IAuthSer
 
         return (IssueToken(user), null);
     }
+
+    public async Task<(AuthResponse? Response, string? Error)> GoogleLoginAsync(string accessToken)
+    {
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+        HttpResponseMessage googleRes;
+        try
+        {
+            googleRes = await http.GetAsync("https://www.googleapis.com/oauth2/v3/userinfo");
+        }
+        catch
+        {
+            return (null, "Could not reach Google.");
+        }
+
+        if (!googleRes.IsSuccessStatusCode)
+            return (null, "Invalid Google token.");
+
+        var info = await googleRes.Content.ReadFromJsonAsync<GoogleUserInfo>(
+            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (info?.Email is null)
+            return (null, "Could not retrieve email from Google.");
+
+        var email = info.Email.Trim().ToLowerInvariant();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+        if (user is null)
+        {
+            var displayName = (info.Name ?? email.Split('@')[0]).Trim();
+            user = User.Create(email, "", displayName);
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+        }
+
+        return (IssueToken(user), null);
+    }
+
+    private record GoogleUserInfo(string? Email, string? Name, string? Sub);
 
     private AuthResponse IssueToken(User user)
     {

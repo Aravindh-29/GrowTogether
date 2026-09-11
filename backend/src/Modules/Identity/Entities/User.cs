@@ -16,4 +16,9 @@ public class User
         PasswordHash = passwordHash,
         DisplayName = displayName
     };
+
+    public void UpdatePasswordHash(string newHash)
+    {
+        PasswordHash = newHash;
+    }
 }

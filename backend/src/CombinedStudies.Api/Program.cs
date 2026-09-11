@@ -1,10 +1,21 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using CombinedStudies.Api.Endpoints;
+using CombinedStudies.Api.Hubs;
+using CombinedStudies.Api.Services;
+using CombinedStudies.Groups.Services;
+using CombinedStudies.Chat;
+using CombinedStudies.Connections;
+using CombinedStudies.Groups;
 using CombinedStudies.Identity;
+using CombinedStudies.Profiles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.ConfigureHttpJsonOptions(opts =>
+    opts.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -34,7 +45,10 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddCors(opts =>
     opts.AddDefaultPolicy(p => p
-        .WithOrigins("http://localhost:3000", "http://localhost:5173")
+        .WithOrigins("http://localhost:3000", "http://localhost:5173",
+                     "https://localhost:5173",
+                     "https://192.168.8.218:5173",
+                     "http://192.168.8.218:5173")
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials()));
@@ -53,15 +67,39 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience            = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
+        // Allow JWT in query string for SignalR WebSocket connections
+        opts.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var token = ctx.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(token) && ctx.Request.Path.StartsWithSegments("/hubs"))
+                    ctx.Token = token;
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
 
+// SignalR
+builder.Services.AddSignalR();
+
+// Modules
 builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddProfilesModule(builder.Configuration);
+builder.Services.AddConnectionsModule(builder.Configuration);
+builder.Services.AddChatModule(builder.Configuration);
+builder.Services.AddGroupsModule(builder.Configuration);
+builder.Services.AddScoped<IGroupNotifier, SignalRGroupNotifier>();
 
 var app = builder.Build();
 
 await app.Services.MigrateIdentityAsync();
+await app.Services.MigrateProfilesAsync();
+await app.Services.MigrateConnectionsAsync();
+await app.Services.MigrateChatAsync();
+await app.Services.MigrateGroupsAsync();
 
 if (app.Environment.IsDevelopment())
 {
@@ -70,15 +108,32 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
-
-app.MapGet("/", () => new { name = "CombinedStudies API", version = "0.1.0", status = "ok" })
+app.MapGet("/api", () => new { name = "CombinedStudies API", version = "0.1.0", status = "ok" })
    .WithName("Root").WithOpenApi();
 
 app.MapIdentityEndpoints();
+app.MapProfileEndpoints();
+app.MapConnectionEndpoints();
+app.MapChatEndpoints();
+app.MapGroupEndpoints();
+app.MapNotificationEndpoints();
+
+// Call status — lightweight check so UI can show "Join" vs "Start call"
+app.MapGet("/api/groups/{groupId}/call-active", (string groupId) =>
+    Results.Ok(new { active = CombinedStudies.Api.Hubs.ChatHub.IsGroupCallActive(groupId) })
+).RequireAuthorization();
+
+// SignalR hub
+app.MapHub<ChatHub>("/hubs/chat");
+
+// SPA fallback — must be last
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
