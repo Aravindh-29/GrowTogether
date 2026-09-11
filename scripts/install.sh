@@ -334,7 +334,7 @@ download_binary() {
 
 if [[ ! -f "$MINIO_BIN" ]] || [[ ! -s "$MINIO_BIN" ]]; then
     download_binary \
-        "https://github.com/minio/minio/releases/latest/download/minio" \
+        "https://github.com/minio/minio/releases/latest/download/minio_linux_amd64" \
         "$MINIO_BIN" "MinIO server"
     ok "MinIO binary downloaded ($(du -sh "$MINIO_BIN" | cut -f1))"
 else
@@ -343,7 +343,7 @@ fi
 
 if [[ ! -f "$MINIO_MC" ]] || [[ ! -s "$MINIO_MC" ]]; then
     download_binary \
-        "https://github.com/minio/mc/releases/latest/download/mc" \
+        "https://github.com/minio/mc/releases/latest/download/mc_linux_amd64" \
         "$MINIO_MC" "MinIO mc client"
     ok "mc downloaded"
 else
