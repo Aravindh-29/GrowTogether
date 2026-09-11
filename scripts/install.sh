@@ -195,19 +195,15 @@ step "3 / 9  .NET 8 SDK"
 if dotnet --version 2>/dev/null | grep -qE "^[89]\."; then
     ok ".NET already installed: $(dotnet --version)"
 else
-    # Microsoft feed only exists up to 24.04; use 24.04 feed on newer Ubuntu
-    UBUNTU_VER="$(lsb_release -rs)"
-    MS_FEED_VER="$UBUNTU_VER"
-    if awk "BEGIN{exit !($UBUNTU_VER >= 25)}" 2>/dev/null; then
-        MS_FEED_VER="24.04"
-        info "Ubuntu $UBUNTU_VER detected — using Microsoft feed for 24.04"
-    fi
-    rm -f /tmp/packages-microsoft-prod.deb
-    wget -qO /tmp/packages-microsoft-prod.deb \
-        "https://packages.microsoft.com/config/ubuntu/${MS_FEED_VER}/packages-microsoft-prod.deb"
-    dpkg -i /tmp/packages-microsoft-prod.deb
-    apt-get update -qq
-    apt-get install -y -qq dotnet-sdk-8.0 2>&1 | tail -3
+    info "Installing .NET 8 via dotnet-install.sh (works on all Ubuntu versions)..."
+    curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+    chmod +x /tmp/dotnet-install.sh
+    /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet 2>&1 | tail -5
+    # Symlink so dotnet is on PATH for all users
+    ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
+    # Make sure it's usable in this shell session
+    export DOTNET_ROOT=/usr/share/dotnet
+    export PATH=$PATH:/usr/share/dotnet
     ok ".NET $(dotnet --version) installed"
 fi
 
@@ -647,6 +643,7 @@ StandardError=journal
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=ASPNETCORE_URLS=http://0.0.0.0:$APP_PORT
 Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+Environment=DOTNET_ROOT=/usr/share/dotnet
 
 [Install]
 WantedBy=multi-user.target
