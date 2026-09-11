@@ -13,7 +13,7 @@ const titleContainer = {
 const titleWord = {
   hidden:  { opacity: 0, x: -20, filter: 'blur(6px)' },
   visible: { opacity: 1, x:   0, filter: 'blur(0px)',
-             transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+             transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const } },
 }
 const taglineVar = {
   hidden:  { opacity: 0, y: 10 },
@@ -27,7 +27,7 @@ const barVar = {
 const cardVar = {
   hidden:  { opacity: 0, y: 30, x: 0,   scale: 0.97 },
   visible: { opacity: 1, y: -50, x: -80, scale: 1,
-             transition: { duration: 0.55, delay: 0.42, ease: [0.16, 1, 0.3, 1] } },
+             transition: { duration: 0.55, delay: 0.42, ease: [0.16, 1, 0.3, 1] as const } },
 }
 const formVar = {
   hidden:  {},

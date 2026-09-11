@@ -10,7 +10,7 @@ import { COMMON_SKILLS } from '../data/skills'
 /* ─── Motion variants ─────────────────────────────────────────────────── */
 const stepVar = {
   enter:  (d: number) => ({ opacity: 0, x: d > 0 ? 40 : -40 }),
-  center: { opacity: 1, x: 0, transition: { duration: 0.28, ease: [0.16,1,0.3,1] } },
+  center: { opacity: 1, x: 0, transition: { duration: 0.28, ease: [0.16,1,0.3,1] as const } },
   exit:   (d: number) => ({ opacity: 0, x: d > 0 ? -40 : 40, transition: { duration: 0.18 } }),
 }
 

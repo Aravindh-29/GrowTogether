@@ -34,10 +34,10 @@ export default function PostsPage() {
   }, [])
 
   const handleLike = async (id: string) => {
-    try { const r = await postApi.like(id); setPosts(p => p.map(x => x.id === id ? r.data : x)) } catch {}
+    try { const r = await postApi.toggleLike(id); setPosts(p => p.map(x => x.id === id ? r.data : x)) } catch {}
   }
   const handleRepost = async (id: string) => {
-    try { const r = await postApi.repost(id); setPosts(p => p.map(x => x.id === id ? r.data : x)) } catch {}
+    try { const r = await postApi.toggleRepost(id); setPosts(p => p.map(x => x.id === id ? r.data : x)) } catch {}
   }
   const handleAgree = async (id: string) => {
     try { const r = await postApi.react(id, 'agree'); setPosts(p => p.map(x => x.id === id ? r.data : x)) } catch {}
