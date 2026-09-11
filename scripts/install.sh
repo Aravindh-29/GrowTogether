@@ -403,9 +403,11 @@ mkdir -p "$CONFIG_DIR"
 chmod 750 "$CONFIG_DIR"
 chown root:"$APP_USER" "$CONFIG_DIR"
 
-# Public URL for MinIO (used for image URLs stored in DB)
+# Public URL for MinIO (used for image URLs stored in DB).
+# When a domain is set we proxy MinIO through nginx at /storage so
+# the browser never needs to reach port 9000 directly.
 if [[ -n "$DOMAIN_NAME" ]]; then
-    MINIO_PUBLIC_URL="https://${DOMAIN_NAME}:${MINIO_PORT}"
+    MINIO_PUBLIC_URL="https://${DOMAIN_NAME}/storage"
 else
     MINIO_PUBLIC_URL="http://${PUBLIC_IP}:${MINIO_PORT}"
 fi
@@ -606,6 +608,17 @@ server {
     ssl_session_timeout 10m;
 
     client_max_body_size 30M;
+
+    # MinIO object storage — proxied so images load over HTTPS without port 9000
+    location /storage/ {
+        proxy_pass         http://127.0.0.1:${MINIO_PORT}/;
+        proxy_set_header   Host              \$host;
+        proxy_set_header   X-Real-IP         \$remote_addr;
+        proxy_set_header   X-Forwarded-For   \$proxy_add_x_forwarded_for;
+        proxy_buffering    off;
+        proxy_connect_timeout 30s;
+        proxy_read_timeout    60s;
+    }
 
     location / {
         proxy_pass         http://127.0.0.1:${APP_PORT};
